@@ -2,6 +2,11 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio Version 17
 
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Synth1 - Standalone Plugin", "Synth1_StandalonePlugin.vcxproj", "{69CAE22B-E278-ED7E-19C1-96AD192EEEFF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6546B6B9-1E2C-6676-11E0-09197652E7CF} = {6546B6B9-1E2C-6676-11E0-09197652E7CF}
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Synth1 - VST3", "Synth1_VST3.vcxproj", "{E7255078-CFA0-F4F9-16A3-3B13A692102B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6546B6B9-1E2C-6676-11E0-09197652E7CF} = {6546B6B9-1E2C-6676-11E0-09197652E7CF}
@@ -22,6 +27,10 @@ Global
 		{E7255078-CFA0-F4F9-16A3-3B13A692102B}.Debug|x64.Build.0 = Debug|x64
 		{E7255078-CFA0-F4F9-16A3-3B13A692102B}.Release|x64.ActiveCfg = Release|x64
 		{E7255078-CFA0-F4F9-16A3-3B13A692102B}.Release|x64.Build.0 = Release|x64
+		{69CAE22B-E278-ED7E-19C1-96AD192EEEFF}.Debug|x64.ActiveCfg = Debug|x64
+		{69CAE22B-E278-ED7E-19C1-96AD192EEEFF}.Debug|x64.Build.0 = Debug|x64
+		{69CAE22B-E278-ED7E-19C1-96AD192EEEFF}.Release|x64.ActiveCfg = Release|x64
+		{69CAE22B-E278-ED7E-19C1-96AD192EEEFF}.Release|x64.Build.0 = Release|x64
 		{6546B6B9-1E2C-6676-11E0-09197652E7CF}.Debug|x64.ActiveCfg = Debug|x64
 		{6546B6B9-1E2C-6676-11E0-09197652E7CF}.Debug|x64.Build.0 = Debug|x64
 		{6546B6B9-1E2C-6676-11E0-09197652E7CF}.Release|x64.ActiveCfg = Release|x64

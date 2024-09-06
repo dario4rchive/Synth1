@@ -17,12 +17,16 @@ TapSynthAudioProcessorEditor::TapSynthAudioProcessorEditor(TapSynthAudioProcesso
     , adsr("Amp Envelope", audioProcessor.apvts, "ATTACK", "DECAY", "SUSTAIN", "RELEASE")
     , filterAdsr("Mod Envelope", audioProcessor.apvts, "FILTERATTACK", "FILTERDECAY", "FILTERSUSTAIN", "FILTERRELEASE")
     , filter(audioProcessor.apvts, "FILTERTYPE", "FILTERFREQ", "FILTERRES")
+    //=== Hier wird das MidiKeyboardComponent initialisiert
+    , keyboardComponent(audioProcessor.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
 {
-    setSize(620, 500);
+    setSize(620, 600); // Die Größe des Fensters wird angepasst, um das Keyboard aufzunehmen
+
     addAndMakeVisible(osc);
     addAndMakeVisible(adsr);
     addAndMakeVisible(filterAdsr);
     addAndMakeVisible(filter);
+    addAndMakeVisible(keyboardComponent); //=== Das Keyboard wird sichtbar gemacht
 }
 
 TapSynthAudioProcessorEditor::~TapSynthAudioProcessorEditor()
@@ -45,5 +49,8 @@ void TapSynthAudioProcessorEditor::resized()
     adsr.setBounds(osc.getRight(), paddingY, 300, 200);
     filterAdsr.setBounds(paddingX, paddingY2, 300, 200);
     filter.setBounds(filterAdsr.getRight(), paddingY2, 300, 200);
+
+    //=== Hier wird das Keyboard positioniert
+    keyboardComponent.setBounds(10, 450, getWidth() - 20, 100);
 }
 

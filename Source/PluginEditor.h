@@ -34,5 +34,8 @@ private:
     AdsrComponent filterAdsr;
     FilterComponent filter;
 
+    //=== Hier wird das MidiKeyboardComponent hinzugefügt
+    juce::MidiKeyboardComponent keyboardComponent;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TapSynthAudioProcessorEditor)
 };

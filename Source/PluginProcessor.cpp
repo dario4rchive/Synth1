@@ -22,16 +22,123 @@ TapSynthAudioProcessor::TapSynthAudioProcessor()
     ), apvts(*this, nullptr, "Parameters", createParams())
 #endif
 {
+    const int numVoices = 8; // Anzahl der Stimmen für Polyphonie festlegen
+
+    for (int i = 0; i < numVoices; ++i)
+    {
+        synth.addVoice(new SynthVoice());
+    }
+
     synth.addSound(new SynthSound());
-    synth.addVoice(new SynthVoice());
 }
 
 TapSynthAudioProcessor::~TapSynthAudioProcessor()
 {
-
 }
 
 //==============================================================================
+
+// Bereitet den Prozessor auf die Wiedergabe vor
+void TapSynthAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+{
+    synth.setCurrentPlaybackSampleRate(sampleRate);
+
+    for (int i = 0; i < synth.getNumVoices(); i++)
+    {
+        if (auto* voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
+        {
+            voice->prepareToPlay(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+        }
+    }
+}
+
+// Gibt Ressourcen frei, wenn die Wiedergabe gestoppt wird
+void TapSynthAudioProcessor::releaseResources()
+{
+    // Gelegenheit, Speicher freizugeben, wenn die Wiedergabe gestoppt wird
+}
+
+#ifndef JucePlugin_PreferredChannelConfigurations
+// Überprüft, ob das Buses-Layout unterstützt wird
+bool TapSynthAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+{
+#if JucePlugin_IsMidiEffect
+    juce::ignoreUnused(layouts);
+    return true;
+#else
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        return false;
+
+#if ! JucePlugin_IsSynth
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+        return false;
+#endif
+
+    return true;
+#endif
+}
+#endif
+
+// Verarbeitet den Audio- und MIDI-Datenblock
+void TapSynthAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear(i, 0, buffer.getNumSamples());
+
+    //=== Hier wird der MIDI-Keyboard-Zustand verarbeitet
+    keyboardState.processNextMidiBuffer(midiMessages, 0, buffer.getNumSamples(), true);
+
+    for (int i = 0; i < synth.getNumVoices(); ++i)
+    {
+        if (auto* voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
+        {
+            auto& oscWaveChoice = *apvts.getRawParameterValue("OSC1WAVETYPE");
+            auto& fmFreq = *apvts.getRawParameterValue("OSC1FMFREQ");
+            auto& fmDepth = *apvts.getRawParameterValue("OSC1FMDEPTH");
+            auto& attack = *apvts.getRawParameterValue("ATTACK");
+            auto& decay = *apvts.getRawParameterValue("DECAY");
+            auto& sustain = *apvts.getRawParameterValue("SUSTAIN");
+            auto& release = *apvts.getRawParameterValue("RELEASE");
+            auto& fAttack = *apvts.getRawParameterValue("FILTERATTACK");
+            auto& fDecay = *apvts.getRawParameterValue("FILTERDECAY");
+            auto& fSustain = *apvts.getRawParameterValue("FILTERSUSTAIN");
+            auto& fRelease = *apvts.getRawParameterValue("FILTERRELEASE");
+            auto& filterType = *apvts.getRawParameterValue("FILTERTYPE");
+            auto& cutoff = *apvts.getRawParameterValue("FILTERFREQ");
+            auto& resonance = *apvts.getRawParameterValue("FILTERRES");
+
+            // Update voice parameters
+            voice->getOscillator().setWaveType(oscWaveChoice);
+            voice->getOscillator().updateFm(fmFreq, fmDepth);
+            voice->getAdsr().update(attack.load(), decay.load(), sustain.load(), release.load());
+            voice->getFilterAdsr().update(fAttack.load(), fDecay.load(), fSustain.load(), fRelease.load());
+            voice->updateFilter(filterType, cutoff, resonance);
+        }
+    }
+
+    synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+}
+
+// Gibt an, ob ein Editor existiert
+bool TapSynthAudioProcessor::hasEditor() const
+{
+    return true;
+}
+
+// Erstellt den Plugin-Editor
+juce::AudioProcessorEditor* TapSynthAudioProcessor::createEditor()
+{
+    return new TapSynthAudioProcessorEditor(*this);
+}
+
+//==============================================================================
+// Die folgenden Methoden können unverändert bleiben
+
 const juce::String TapSynthAudioProcessor::getName() const
 {
     return JucePlugin_Name;
@@ -71,8 +178,7 @@ double TapSynthAudioProcessor::getTailLengthSeconds() const
 
 int TapSynthAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-    // so this should be at least 1, even if you're not really implementing programs.
+    return 1;
 }
 
 int TapSynthAudioProcessor::getCurrentProgram()
@@ -94,128 +200,19 @@ void TapSynthAudioProcessor::changeProgramName(int index, const juce::String& ne
 }
 
 //==============================================================================
-void TapSynthAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
-{
-    synth.setCurrentPlaybackSampleRate(sampleRate);
 
-    for (int i = 0; i < synth.getNumVoices(); i++)
-    {
-        if (auto voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
-        {
-            voice->prepareToPlay(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
-        }
-    }
-}
-
-void TapSynthAudioProcessor::releaseResources()
-{
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
-}
-
-#ifndef JucePlugin_PreferredChannelConfigurations
-bool TapSynthAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
-{
-#if JucePlugin_IsMidiEffect
-    juce::ignoreUnused(layouts);
-    return true;
-#else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-#if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-#endif
-
-    return true;
-#endif
-}
-#endif
-
-void TapSynthAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
-{
-    juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear(i, 0, buffer.getNumSamples());
-
-    // Update voice
-    {
-        for (int i = 0; i < synth.getNumVoices(); ++i)
-        {
-            if (auto voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
-            {
-                // Osc
-                auto& oscWaveChoice = *apvts.getRawParameterValue("OSC1WAVETYPE");
-
-                // FM
-                auto& fmFreq = *apvts.getRawParameterValue("OSC1FMFREQ");
-                auto& fmDepth = *apvts.getRawParameterValue("OSC1FMDEPTH");
-
-                // Amp Adsr
-                auto& attack = *apvts.getRawParameterValue("ATTACK");
-                auto& decay = *apvts.getRawParameterValue("DECAY");
-                auto& sustain = *apvts.getRawParameterValue("SUSTAIN");
-                auto& release = *apvts.getRawParameterValue("RELEASE");
-
-                // Filter Adsr
-                auto& fAttack = *apvts.getRawParameterValue("FILTERATTACK");
-                auto& fDecay = *apvts.getRawParameterValue("FILTERDECAY");
-                auto& fSustain = *apvts.getRawParameterValue("FILTERSUSTAIN");
-                auto& fRelease = *apvts.getRawParameterValue("FILTERRELEASE");
-
-                // Filter
-                auto& filterType = *apvts.getRawParameterValue("FILTERTYPE");
-                auto& cutoff = *apvts.getRawParameterValue("FILTERFREQ");
-                auto& resonance = *apvts.getRawParameterValue("FILTERRES");
-
-                // Update voice
-                voice->getOscillator().setWaveType(oscWaveChoice);
-                voice->getOscillator().updateFm(fmFreq, fmDepth);
-                voice->getAdsr().update(attack.load(), decay.load(), sustain.load(), release.load());
-                voice->getFilterAdsr().update(fAttack.load(), fDecay.load(), fSustain.load(), fRelease.load());
-                voice->updateFilter(filterType, cutoff, resonance);
-            }
-        }
-    }
-
-    synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
-}
-
-//==============================================================================
-bool TapSynthAudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
-juce::AudioProcessorEditor* TapSynthAudioProcessor::createEditor()
-{
-    return new TapSynthAudioProcessorEditor(*this);
-}
-
-//==============================================================================
 void TapSynthAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    // Hier können die Zustände gespeichert werden
 }
 
 void TapSynthAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    // Hier können die Zustände wiederhergestellt werden
 }
 
 //==============================================================================
-// This creates new instances of the plugin..
+// Dies erstellt neue Instanzen des Plugins..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new TapSynthAudioProcessor();

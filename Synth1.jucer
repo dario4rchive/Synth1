@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="Fk14rX" name="Synth1" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
-              pluginFormats="buildVST3">
+              pluginFormats="buildStandalone,buildVST3">
   <MAINGROUP id="OLx5cA" name="Synth1">
     <GROUP id="{52A183D0-4059-89F6-286E-DBD5102AB242}" name="Source">
       <FILE id="vaIsr5" name="AdsrData.cpp" compile="1" resource="0" file="Source/AdsrData.cpp"/>

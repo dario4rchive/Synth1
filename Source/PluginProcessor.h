@@ -57,7 +57,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState apvts;
-
+    juce::MidiKeyboardState keyboardState; // MIDI-Tastaturzustand hinzugefügt
 private:
     juce::Synthesiser synth;
     juce::AudioProcessorValueTreeState::ParameterLayout createParams();
