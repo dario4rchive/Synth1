@@ -38,7 +38,7 @@ void FilterComponent::paint(juce::Graphics& g)
     auto bounds = getLocalBounds().reduced(5);
     auto labelSpace = bounds.removeFromTop(25.0f);
 
-    g.fillAll(juce::Colours::black);
+    g.fillAll(juce::Colour(0xFFA4AC86));
     g.setColour(juce::Colours::white);
     g.setFont(20.0f);
     g.drawText("Filter", labelSpace.withX(5), juce::Justification::left);

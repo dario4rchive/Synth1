@@ -1,6 +1,7 @@
 /*
   ==============================================================================
 
+    PluginEditor.cpp
     This file contains the basic framework code for a JUCE plugin editor.
 
   ==============================================================================
@@ -9,47 +10,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//=== LookAndFeel-Klasse (ehemals GUI)
-class LookAndFeel : public juce::LookAndFeel_V4
-{
-public:
-    LookAndFeel()
-    {
-        // Farben für ComboBoxen mit Hex-Codes setzen
-        setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xB6AD90)); // Dunkelgrauer Hintergrund
-        setColour(juce::ComboBox::textColourId, juce::Colour(0xFFFFFFFF)); // Weißer Text
-        setColour(juce::ComboBox::arrowColourId, juce::Colour(0x582F0E)); // Oranger Pfeil
-        setColour(juce::ComboBox::outlineColourId, juce::Colour(0xC2C5AA)); // Schwarzer Umriss
-        setColour(juce::PopupMenu::backgroundColourId, juce::Colour(0x414833)); // Dunkelgrau für das Dropdown-Menü
-        setColour(juce::PopupMenu::textColourId, juce::Colour(0xFFFFFFFF)); // Weißer Text im Dropdown-Menü
-        setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(0xFFFFA500)); // Orange für hervorgehobenen Eintrag
-        setColour(juce::PopupMenu::highlightedTextColourId, juce::Colour(0xFF000000)); // Schwarzer Text für hervorgehobenen Eintrag
-    }
-
-    void drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
-        int buttonX, int buttonY, int buttonW, int buttonH, juce::ComboBox& box) override
-    {
-        auto cornerSize = 5.0f;
-        auto boxBounds = juce::Rectangle<float>(buttonX, buttonY, width, height).reduced(0.5f, 0.5f);
-
-        g.setColour(box.findColour(juce::ComboBox::backgroundColourId));
-        g.fillRoundedRectangle(boxBounds, cornerSize);
-
-        g.setColour(box.findColour(juce::ComboBox::outlineColourId));
-        g.drawRoundedRectangle(boxBounds, cornerSize, 1.0f);
-
-        juce::Rectangle<int> arrowZone(width - 30, 0, 20, height);
-        juce::Path path;
-        path.startNewSubPath((float)arrowZone.getX() + 3.0f, (float)arrowZone.getCentreY() - 2.0f);
-        path.lineTo((float)arrowZone.getCentreX(), (float)arrowZone.getCentreY() + 3.0f);
-        path.lineTo((float)arrowZone.getRight() - 3.0f, (float)arrowZone.getCentreY() - 2.0f);
-
-        g.setColour(box.findColour(juce::ComboBox::arrowColourId));
-        g.strokePath(path, juce::PathStrokeType(2.0f));
-    }
-};
-
 //==============================================================================
+// Konstruktor für den Plugin-Editor
 TapSynthAudioProcessorEditor::TapSynthAudioProcessorEditor(TapSynthAudioProcessor& p)
     : AudioProcessorEditor(&p)
     , audioProcessor(p)
@@ -59,36 +21,44 @@ TapSynthAudioProcessorEditor::TapSynthAudioProcessorEditor(TapSynthAudioProcesso
     , filter(audioProcessor.apvts, "FILTERTYPE", "FILTERFREQ", "FILTERRES")
     , keyboardComponent(audioProcessor.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
 {
+    // Setze die Fenstergröße
     setSize(900, 600); // Fenstergröße
 
-    // LookAndFeel anwenden
-    static LookAndFeel lookAndFeel;
-    osc.setLookAndFeel(&lookAndFeel);
-    adsr.setLookAndFeel(&lookAndFeel);
-    filter.setLookAndFeel(&lookAndFeel);
+    // Setze das benutzerdefinierte LookAndFeel
+    setLookAndFeel(&customLookAndFeel);
+    osc.setLookAndFeel(&customLookAndFeel);
+    adsr.setLookAndFeel(&customLookAndFeel);
+    filter.setLookAndFeel(&customLookAndFeel);
 
+    // Komponenten hinzufügen
     addAndMakeVisible(osc);
     addAndMakeVisible(adsr);
     addAndMakeVisible(filterAdsr);
     addAndMakeVisible(filter);
-    addAndMakeVisible(keyboardComponent); // Keyboard wird sichtbar gemacht
+    addAndMakeVisible(keyboardComponent); // Keyboard sichtbar machen
 }
 
+//==============================================================================
+// Destruktor für den Plugin-Editor
 TapSynthAudioProcessorEditor::~TapSynthAudioProcessorEditor()
 {
     // LookAndFeel-Zuordnung zurücksetzen, bevor die Klasse zerstört wird
+    setLookAndFeel(nullptr);
     osc.setLookAndFeel(nullptr);
     adsr.setLookAndFeel(nullptr);
     filter.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
+// Paint-Methode zum Zeichnen des Hintergrunds und der anderen GUI-Komponenten
 void TapSynthAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::bisque); // Hintergrundfarbe
+    // Fülle den Hintergrund mit einer Farbe, die du anpassen möchtest
+    g.fillAll(juce::Colour(0xFFfff0d6)); // Beispiel: Hintergrundfarbe "bisque"
 }
 
 //==============================================================================
+// Methode zum Anordnen und Größenanpassen der GUI-Komponenten
 void TapSynthAudioProcessorEditor::resized()
 {
     const int componentWidth = 300;  // Breite der Komponente
